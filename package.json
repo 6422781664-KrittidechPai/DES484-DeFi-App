@@ -1,9 +1,16 @@
 {
-  "dependencies": {
-    "ganache-cli": "^6.12.2"
+  "name": "des484-defi-app",
+  "version": "1.0.0",
+  "description": "- Install Truffle (https://archive.trufflesuite.com/docs/truffle/how-to/install/)\r - Install Ganache (Probably needed)\r   - It's a GUI program. Please search in Google",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "devDependencies": {
-    "truffle": "^5.11.5",
-    "web3": "^4.16.0"
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.17"
   }
 }
