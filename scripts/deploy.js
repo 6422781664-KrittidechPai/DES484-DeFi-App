@@ -2,17 +2,17 @@
 const hre = require("hardhat");
 
 async function main() {
-  // Fetch the contract factory for sETH
-  const sETH = await hre.ethers.getContractFactory("sETH");
+  // Deploy MockChainlink contract
+  const MockChainlink = await hre.ethers.getContractFactory("MockChainlink");
+  const mockChainlink = await MockChainlink.deploy();
+  await mockChainlink.waitForDeployment();
+  console.log("MockChainlink contract deployed to:", await mockChainlink.getAddress());
 
-  // Deploy the sETH contract
-  const sETHContract = await sETH.deploy();
-
-  // Wait for the deployment to complete
-  await sETHContract.waitForDeployment();
-
-  // Log the deployed contract address
-  console.log("sETH contract deployed to:", await sETHContract.getAddress());
+  // Deploy MockOracle contract with the address of MockChainlink
+  const MockOracle = await hre.ethers.getContractFactory("MockOracle");
+  const mockOracle = await MockOracle.deploy(await mockChainlink.getAddress());
+  await mockOracle.waitForDeployment();
+  console.log("MockOracle contract deployed to:", await mockOracle.getAddress());
 }
 
 // Handle errors and invoke the main function

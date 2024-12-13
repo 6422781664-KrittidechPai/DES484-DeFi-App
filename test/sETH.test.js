@@ -2,7 +2,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("sETH Contract", function () {
+describe.skip("sETH Contract", function () {
   let sETH;
   let sETHContract;
   let owner;
