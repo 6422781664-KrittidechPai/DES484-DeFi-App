@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "ganache-cli": "^6.12.2"
+    "hardhat": "^2.22.17"
   },
   "devDependencies": {
-    "truffle": "^5.11.5",
-    "web3": "^4.16.0"
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.1.0"
   }
 }
