@@ -14,6 +14,6 @@ contract MockOracle {
 
     // Retrieves price data for a specific asset from MockChainlink
     function fetchPrice(bytes32 assetId) public view returns (int256) {
-        return mockChainlink.getPrice(assetId);
+        return  .getPrice(assetId);
     }
 }

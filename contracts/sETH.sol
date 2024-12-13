@@ -9,7 +9,7 @@ contract sETH is ERC20 {
     address public lendingPool;
 
     // Constructor to set the name, symbol, and LendingPool address
-    constructor(address _lendingPool) ERC20("Synthetic Ether", "sETH") {
+    constructor(address _lendingPool) ERC20("Support Ether", "sETH") {
         require(_lendingPool != address(0), "Invalid Lending Pool address");
         lendingPool = _lendingPool;
     }
@@ -20,14 +20,22 @@ contract sETH is ERC20 {
         _;
     }
 
+    // Event emitted when new sETH tokens are minted
+    event Mint(address indexed to, uint256 amount);
+
+    // Event emitted when sETH tokens are burned
+    event Burn(address indexed from, uint256 amount);
+
     // Function to mint sETH tokens (restricted to LendingPool)
     function mint(address to, uint256 amount) external onlyLendingPool {
         _mint(to, amount);
+        emit Mint(to, amount);  // Emit the mint event
     }
 
     // Function to burn sETH tokens (restricted to LendingPool)
     function burn(address from, uint256 amount) external onlyLendingPool {
         _burn(from, amount);
+        emit Burn(from, amount);  // Emit the burn event
     }
 
     // For testing only
