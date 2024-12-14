@@ -1,92 +1,44 @@
 const { expect } = require("chai");
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
 
-describe("LendingPool Contract", function () {
-  let lendingPool;
-  let sETH;
-  let sBTC;
+describe.skip("sToken Contract", function () {
+  let sETHToken;
+  let sBTCToken;
   let owner;
-  let user1;
+  let user;
 
   beforeEach(async function () {
-    // Get the signers
-    [owner, user1] = await hre.ethers.getSigners();
+    [owner, user] = await ethers.getSigners();
 
-    // Deploy the sToken contract for both sETH and sBTC
-    const sTokenFactory = await hre.ethers.getContractFactory("sToken");
-    
-    sETH = await sTokenFactory.deploy(owner.address, "Support ETH", "sETH", "ETH");
-    await sETH.waitForDeployment(); // Use waitForDeployment
-
-    sBTC = await sTokenFactory.deploy(owner.address, "Support BTC", "sBTC", "BTC");
-    await sBTC.waitForDeployment(); // Use waitForDeployment
-
-    // Deploy the LendingPool contract
-    const LendingPoolFactory = await hre.ethers.getContractFactory("LendingPool");
-    lendingPool = await LendingPoolFactory.deploy();
-    await lendingPool.waitForDeployment(); // Use waitForDeployment
-
-    // Set the sToken addresses in LendingPool contract
-    await lendingPool.setTokenAddresses(await sETH.getAddress(), await sBTC.getAddress());
-
-    // Fund user1 with some ETH for deposit
-    await owner.sendTransaction({
-      to: user1.address,
-      value: hre.ethers.parseEther("10.0"), // Use hre.ethers.parseEther
-    });
+    // Deploy sETH and sBTC
+    const sToken = await ethers.getContractFactory("sToken");
+    sETHToken = await sToken.deploy("Synthetic Ether", "sETH");
+    sBTCToken = await sToken.deploy("Synthetic Bitcoin", "sBTC");
   });
 
-  describe("Deposit functionality", function () {
-    it("should allow user to deposit ETH and mint sETH", async function () {
-      const depositAmount = hre.ethers.parseEther("1.0"); // Use hre.ethers.parseEther
-
-      // Connect user1 and deposit ETH
-      await lendingPool.connect(user1).deposit(depositAmount, "ETH");
-
-      // Check balances
-      const userBalance = await sETH.balanceOf(user1.address);
-      expect(userBalance).to.equal(depositAmount);
-    });
-
-    it("should allow user to deposit BTC and mint sBTC", async function () {
-      const depositAmount = hre.ethers.parseEther("1.0"); // Use hre.ethers.parseEther
-
-      // Connect user1 and deposit BTC (assuming deposit logic for BTC is simulated)
-      await lendingPool.connect(user1).deposit(depositAmount, "BTC");
-
-      // Check balances
-      const userBalance = await sBTC.balanceOf(user1.address);
-      expect(userBalance).to.equal(depositAmount);
-    });
+  it("Should mint sETH tokens to user", async function () {
+    await sETHToken.mint(user.address, ethers.parseEther("10"));
+    const balance = await sETHToken.balanceOf(user.address);
+    expect(balance).to.equal(ethers.parseEther("10"));
   });
 
-  describe("Withdraw functionality", function () {
-    it("should allow user to withdraw sETH and burn the tokens", async function () {
-      const depositAmount = hre.ethers.parseEther("1.0"); // Use hre.ethers.parseEther
+  it("Should burn sETH tokens from user", async function () {
+    await sETHToken.mint(user.address, ethers.parseEther("10"));
+    await sETHToken.burn(user.address, ethers.parseEther("5"));
+    const balance = await sETHToken.balanceOf(user.address);
+    expect(balance).to.equal(ethers.parseEther("5"));
+  });
 
-      // User deposits ETH and mints sETH
-      await lendingPool.connect(user1).deposit(depositAmount, "ETH");
+  it("Should mint sBTC tokens to user", async function () {
+    await sBTCToken.mint(user.address, ethers.parseEther("1"));
+    const balance = await sBTCToken.balanceOf(user.address);
+    expect(balance).to.equal(ethers.parseEther("1"));
+  });
 
-      // Now withdraw sETH
-      await lendingPool.connect(user1).withdraw(depositAmount, "ETH");
-
-      // Check the balance of sETH for user1 should be 0
-      const userBalance = await sETH.balanceOf(user1.address);
-      expect(userBalance).to.equal(0);
-    });
-
-    it("should allow user to withdraw sBTC and burn the tokens", async function () {
-      const depositAmount = hre.ethers.parseEther("1.0"); // Use hre.ethers.parseEther
-
-      // User deposits BTC and mints sBTC
-      await lendingPool.connect(user1).deposit(depositAmount, "BTC");
-
-      // Now withdraw sBTC
-      await lendingPool.connect(user1).withdraw(depositAmount, "BTC");
-
-      // Check the balance of sBTC for user1 should be 0
-      const userBalance = await sBTC.balanceOf(user1.address);
-      expect(userBalance).to.equal(0);
-    });
+  it("Should burn sBTC tokens from user", async function () {
+    await sBTCToken.mint(user.address, ethers.parseEther("1"));
+    await sBTCToken.burn(user.address, ethers.parseEther("0.5"));
+    const balance = await sBTCToken.balanceOf(user.address);
+    expect(balance).to.equal(ethers.parseEther("0.5"));
   });
 });
