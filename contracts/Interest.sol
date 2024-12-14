@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 interface LendingPool {
-    function getTotalBorrow() external view returns (uint256);
-    function getTotalDeposit() external view returns (uint256);
+    function calculateTotalBorrowingsInUSD() external view returns (uint256);
+    function calculateTotalDepositsInUSD() external view returns (uint256);
 }
 
 contract InterestRateModel {
@@ -32,9 +32,9 @@ contract InterestRateModel {
     function getInterestRate() external view returns (uint256) {
         LendingPool pool = LendingPool(lendingPool);
 
-        // Fetch total borrow and deposit values
-        uint256 totalBorrow = pool.getTotalBorrow();
-        uint256 totalDeposit = pool.getTotalDeposit();
+        // Fetch total borrow and deposit values in USD
+        uint256 totalBorrow = pool.calculateTotalBorrowingsInUSD();
+        uint256 totalDeposit = pool.calculateTotalDepositsInUSD();
 
         require(totalDeposit > 0, "Total deposit must be greater than zero");
 
