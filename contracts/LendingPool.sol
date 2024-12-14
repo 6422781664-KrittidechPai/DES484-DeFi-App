@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import "./sToken.sol";
+import "./MockOracle.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract LendingPool {
@@ -9,6 +10,9 @@ contract LendingPool {
     sToken public sETHContract;
     sToken public sBTCContract;
     sToken public mBTCContract;
+
+    // Reference to MockOracle
+    MockOracle public mockOracle;
 
     // Mapping to track user balances in  tokens
     mapping(address => uint256) public ETHPool;
@@ -22,6 +26,14 @@ contract LendingPool {
     bytes32 private constant ETH_HASH = keccak256(abi.encodePacked("ETH"));
     bytes32 private constant BTC_HASH = keccak256(abi.encodePacked("BTC"));
 
+    // Struct for AssetPrice
+    struct AssetPrices {
+        int256 btcPrice;
+        int256 ethPrice;
+    }
+
+    AssetPrices public assetPrices;
+
     // Events for deposit actions
     event Deposited(address indexed user, uint256 amount, string tokenType);
     event DepositFailed(address indexed user, uint256 amount, string reason);
@@ -30,10 +42,14 @@ contract LendingPool {
     event Withdrawn(address indexed user, uint256 amount, string tokenType);
     event WithdrawFailed(address indexed user, uint256 amount, string reason);
 
-    constructor(address _sETHAddress, address _sBTCAddress, address _mBTCAddress) {
+    // Event to log price updates
+    event PriceUpdated(string assetId, int256 newPrice);
+
+    constructor(address _sETHAddress, address _sBTCAddress, address _mBTCAddress, address _MockOracleAddress) {
         sETHContract = sToken(_sETHAddress);
         sBTCContract = sToken(_sBTCAddress);
         mBTCContract = sToken(_mBTCAddress);
+        mockOracle = MockOracle(_MockOracleAddress);
     }
 
     // Deposit function to deposit ETH or BTC into the LendingPool and mint corresponding sTokens
@@ -44,10 +60,6 @@ contract LendingPool {
 
         if (tokenTypeHash == ETH_HASH) {
             require(msg.value == amount, "ETH amount mismatch");
-
-            // Transfer ETH from user to the LendingPool
-            (bool success, ) = address(this).call{value: amount}("");
-            require(success, "Transfer failed");
 
             // Mint sETH to the user
             sETHContract.mint(msg.sender, amount);
@@ -108,5 +120,21 @@ contract LendingPool {
             emit WithdrawFailed(msg.sender, amount, "Invalid token type: Withdraw");
             revert("Invalid token type: Withdraw");
         }
+    }
+
+    function updatePrices() public {
+        // Fetch prices from MockOracle
+        assetPrices.btcPrice = mockOracle.fetchPrice("BTC");
+        assetPrices.ethPrice = mockOracle.fetchPrice("ETH");
+    }
+
+    // Function to fetch BTC price
+    function getBtcPrice() public view returns (int256) {
+        return assetPrices.btcPrice;
+    }
+
+    // Function to fetch ETH price
+    function getEthPrice() public view returns (int256) {
+        return assetPrices.ethPrice;
     }
 }
