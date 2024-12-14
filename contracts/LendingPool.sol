@@ -28,6 +28,9 @@ contract LendingPool {
     mapping(address => uint256) public borrowedETH; // Borrowed ETH
     mapping(address => uint256) public borrowedmBTC; // Borrowed mBTC
 
+    // Mapping to track borrow logic
+    mapping(address => bool) public isBorrowing;
+
     // Constants for token type hashing
     bytes32 private constant ETH_HASH = keccak256(abi.encodePacked("ETH"));
     bytes32 private constant BTC_HASH = keccak256(abi.encodePacked("BTC"));
@@ -49,6 +52,7 @@ contract LendingPool {
 
     // Events for withdraw actions
     event Withdrawn(address indexed user, uint256 amount, string tokenType);
+    event CollateralWithdrawn(address indexed user, uint256 amount, string collateralType);
     event WithdrawFailed(address indexed user, uint256 amount, string reason);
 
     // Event for borrowing
@@ -178,6 +182,37 @@ contract LendingPool {
         }
     }
 
+    // Function to withdraw ETH collateral after loan repayment
+    function withdrawETHCollateral(uint256 amount) external {
+        require(amount > 0, "Amount must be greater than 0");
+        require(collateralETH[msg.sender] >= amount, "Not enough collateral");
+        require(borrowedETH[msg.sender] == 0, "Loan not fully repaid");
+
+        // Update the collateral balance
+        collateralETH[msg.sender] -= amount;
+
+        // Transfer ETH collateral back to the user
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, "ETH transfer failed");
+
+        emit CollateralWithdrawn(msg.sender, amount, "ETH");
+    }
+
+    // Function to withdraw mBTC collateral after loan repayment
+    function withdrawBTC(uint256 amount) external {
+        require(amount > 0, "Amount must be greater than 0");
+        require(collateralmBTC[msg.sender] >= amount, "Not enough collateral");
+        require(borrowedmBTC[msg.sender] == 0, "Loan not fully repaid");
+
+        // Update the collateral balance
+        collateralmBTC[msg.sender] -= amount;
+
+        // Transfer mBTC collateral back to the user
+        require(mBTCContract.transfer(msg.sender, amount), "mBTC transfer failed");
+
+        emit CollateralWithdrawn(msg.sender, amount, "mBTC");
+    }
+
     // Function to get the current collateral balance for the user in ETH
     function getCollateralETH(address user) public view returns (uint256) {
         return collateralETH[user];
@@ -186,18 +221,6 @@ contract LendingPool {
     // Function to get the current collateral balance for the user in mBTC
     function getCollateralBTC(address user) public view returns (uint256) {
         return collateralmBTC[user];
-    }
-
-    // Function to calculate total deposits in the pool
-    function calculateTotalDeposits() public view returns (uint256 totalDeposits) {
-        totalDeposits = ETHPool[address(this)] + mBTCPool[address(this)];
-        return totalDeposits;
-    }
-
-    // Function to calculate total borrowings in the pool
-    function calculateTotalBorrowings() public view returns (uint256 totalBorrowings) {
-        totalBorrowings = borrowedETH[address(this)] + borrowedmBTC[address(this)];
-        return totalBorrowings;
     }
 
     // Function to get the current collateral balance for the user in USD (ETH)
@@ -260,6 +283,7 @@ contract LendingPool {
 
     // Function to borrow ETH with collateral from both ETH and mBTC
     function borrowETH(uint256 amount) external {
+        require(!isBorrowing[msg.sender], "User is already borrowing");
         require(amount > 0, "Amount must be greater than 0");
 
         uint256 totalCollateralInUSD = calculateTotalCollateralInUSD(msg.sender);
@@ -276,29 +300,96 @@ contract LendingPool {
         (bool success, ) = msg.sender.call{value: amount}("");
         require(success, "ETH transfer failed");
 
+        isBorrowing[msg.sender] = true;
         emit Borrowed(msg.sender, amount, "ETH");
     }
 
     // Function to borrow mBTC with collateral from both ETH and mBTC using Collateral Factor
     function borrowBTC(uint256 amount) external {
-    require(amount > 0, "Amount must be greater than 0");
+        require(!isBorrowing[msg.sender], "User is already borrowing");
+        require(amount > 0, "Amount must be greater than 0");
 
-    uint256 totalCollateralInUSD = calculateTotalCollateralInUSD(msg.sender);
+        uint256 totalCollateralInUSD = calculateTotalCollateralInUSD(msg.sender);
 
-    // Calculate the borrowed value in USD (using mBTC price)
-    uint256 borrowedValueInUSD = uint256(amount) * uint256(assetPrices.btcPrice);
+        // Calculate the borrowed value in USD (using mBTC price)
+        uint256 borrowedValueInUSD = uint256(amount) * uint256(assetPrices.btcPrice);
 
-    // Ensure the collateral is sufficient to borrow the amount (based on Collateral Factor)
-    uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
-    require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
+        // Ensure the collateral is sufficient to borrow the amount (based on Collateral Factor)
+        uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
+        require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
 
-    borrowedmBTC[msg.sender] += amount;
+        borrowedmBTC[msg.sender] += amount;
 
-    // Transfer the borrowed mBTC to the user
-    require(mBTCContract.transfer(msg.sender, amount), "mBTC transfer failed");
+        // Transfer the borrowed mBTC to the user
+        require(mBTCContract.transfer(msg.sender, amount), "mBTC transfer failed");
 
-    emit Borrowed(msg.sender, amount, "BTC");
-}
+        isBorrowing[msg.sender] = true;
+        emit Borrowed(msg.sender, amount, "BTC");
+    }
+
+    // Function to repay borrowed ETH
+    function repayETH(uint256 amount) external payable {
+        require(amount > 0, "Amount must be greater than 0");
+        require(isBorrowing[msg.sender], "User is not borrowing ETH");
+        require(borrowedETH[msg.sender] >= amount, "Repayment exceeds borrowed amount");
+
+        // Ensure the sender is providing the correct amount of ETH
+        require(msg.value == amount, "ETH amount mismatch");
+
+        // Deduct the repaid amount from the borrowed balance
+        borrowedETH[msg.sender] -= amount;
+
+        // If the borrowed amount is fully repaid, set isBorrowing to false
+        if (borrowedETH[msg.sender] == 0) {
+            isBorrowing[msg.sender] = false;
+        }
+
+        emit Repaid(msg.sender, amount, "ETH");
+    }
+
+    // Function to repay borrowed mBTC
+    function repayBTC(uint256 amount) external {
+        require(amount > 0, "Amount must be greater than 0");
+        require(isBorrowing[msg.sender], "User is not borrowing mBTC");
+        require(borrowedmBTC[msg.sender] >= amount, "Repayment exceeds borrowed amount");
+
+        // Transfer mBTC from the user to the LendingPool
+        require(mBTCContract.transferFrom(msg.sender, address(this), amount), "mBTC transfer failed");
+
+        // Deduct the repaid amount from the borrowed balance
+        borrowedmBTC[msg.sender] -= amount;
+
+        // If the borrowed amount is fully repaid, set isBorrowing to false
+        if (borrowedmBTC[msg.sender] == 0) {
+            isBorrowing[msg.sender] = false;
+        }
+
+        emit Repaid(msg.sender, amount, "BTC");
+    }
+
+    // Function to fetch debt amount
+    function getDebt(address user) public view returns (uint256 debt) {
+        uint256 borrowedETHValue = borrowedETH[address(user)];
+        uint256 borrowedBTCValue = borrowedmBTC[address(user)];
+        
+        int256 ethPrice = assetPrices.ethPrice; // Replace with actual ETH price in USD
+        int256 btcPrice = assetPrices.btcPrice; // Replace with actual mBTC price in USD
+        
+        debt = (borrowedETHValue * uint256(ethPrice)) + (borrowedBTCValue * uint256(btcPrice));
+        return debt;
+    }
+
+    // Function to fetch deposit amount
+    function getDeposit(address user) public view returns (uint256 deposits) {
+        uint256 ethPool = ETHPool[address(user)];
+        uint256 btcPool = mBTCPool[address(user)];
+        
+        int256 ethPrice = assetPrices.ethPrice; // Replace with actual ETH price in USD
+        int256 btcPrice = assetPrices.btcPrice; // Replace with actual mBTC price in USD
+        
+        deposits = (ethPool * uint256(ethPrice)) + (btcPool * uint256(btcPrice));
+        return deposits;
+    }
 
     // Function to fetch BTC price
     function getBtcPrice() public view returns (int256) {
