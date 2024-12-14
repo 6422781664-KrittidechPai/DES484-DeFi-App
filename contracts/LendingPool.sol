@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "./sToken.sol";
 import "./MockOracle.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "hardhat/console.sol";
 
 contract LendingPool {
     // References to the sToken contracts for ETH and BTC
@@ -289,7 +290,7 @@ contract LendingPool {
         uint256 totalCollateralInUSD = calculateTotalCollateralInUSD(msg.sender);
 
         uint256 borrowedValueInUSD = uint256(amount) * uint256(assetPrices.ethPrice);
-
+        
         // Ensure the collateral is sufficient to borrow the amount (based on Collateral Factor)
         uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
         require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
