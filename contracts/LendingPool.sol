@@ -145,6 +145,49 @@ contract LendingPool {
         assetPrices.ethPrice = mockOracle.fetchPrice("ETH");
     }
 
+    // Function to deposit collateral (ETH or mBTC) into the lending pool
+    function depositCollateral(uint256 amount, string memory tokenType) external payable {
+        require(amount > 0, "Amount must be greater than 0");
+
+        bytes32 tokenTypeHash = keccak256(abi.encodePacked(tokenType));
+
+        if (tokenTypeHash == ETH_HASH) {
+            // ETH deposit logic
+            require(msg.value == amount, "ETH amount mismatch");
+
+            // Mint sETH to the user
+            collateralETH[msg.sender] += amount;
+            ETHPool[msg.sender] += amount;
+
+            emit Deposited(msg.sender, amount, "ETH");
+        } else if (tokenTypeHash == BTC_HASH) {
+            // mBTC deposit logic
+            require(msg.value == amount, "mBTC amount mismatch");
+
+            // Transfer mBTC from the user to the LendingPool
+            require(mBTCContract.transferFrom(msg.sender, address(this), amount), "Transfer of mBTC failed");
+
+            // Mint sBTC to the user
+            collateralmBTC[msg.sender] += amount;
+            mBTCPool[msg.sender] += amount;
+
+            emit Deposited(msg.sender, amount, "BTC");
+        } else {
+            emit DepositFailed(msg.sender, amount, "Invalid token type: Deposit Collateral");
+            revert("Invalid token type: Deposit Collateral");
+        }
+    }
+
+    // Function to get the current collateral balance for the user in ETH
+    function getCollateralETH(address user) public view returns (uint256) {
+        return collateralETH[user];
+    }
+
+    // Function to get the current collateral balance for the user in mBTC
+    function getCollateralBTC(address user) public view returns (uint256) {
+        return collateralmBTC[user];
+    }
+
     // Calculate the total collateral value in USD for all native tokens (ETH and mBTC)
     function calculateTotalCollateralInUSD(address user) internal view returns (uint256 totalCollateralInUSD) {
         uint256 collateralETHAmount = collateralETH[user];
