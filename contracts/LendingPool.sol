@@ -40,8 +40,8 @@ contract LendingPool {
 
     AssetPrices public assetPrices;
 
-    // Collateralization ratio (150% in this case)
-    uint256 public constant COLLATERALIZATION_RATIO = 150;
+    // Collateral Factor (e.g., 0.75 means users can borrow up to 75% of the value of their collateral)
+    uint256 public collateralFactor = 75; // 75% collateral factor
 
     // Events for deposit actions
     event Deposited(address indexed user, uint256 amount, string tokenType);
@@ -188,6 +188,56 @@ contract LendingPool {
         return collateralmBTC[user];
     }
 
+    // Function to calculate total deposits in the pool
+    function calculateTotalDeposits() public view returns (uint256 totalDeposits) {
+        totalDeposits = ETHPool[address(this)] + mBTCPool[address(this)];
+        return totalDeposits;
+    }
+
+    // Function to calculate total borrowings in the pool
+    function calculateTotalBorrowings() public view returns (uint256 totalBorrowings) {
+        totalBorrowings = borrowedETH[address(this)] + borrowedmBTC[address(this)];
+        return totalBorrowings;
+    }
+
+    // Function to get the current collateral balance for the user in USD (ETH)
+    function getCollateralETHInUSD(address user) public view returns (uint256) {
+        uint256 collateralInETH = collateralETH[user];
+        int256 ethPrice = assetPrices.ethPrice; // Replace with actual ETH price in USD
+        return collateralInETH * uint256(ethPrice);
+    }
+
+    // Function to get the current collateral balance for the user in USD (mBTC)
+    function getCollateralBTCInUSD(address user) public view returns (uint256) {
+        uint256 collateralInBTC = collateralmBTC[user];
+        int256 btcPrice = assetPrices.btcPrice; // Replace with actual mBTC price in USD
+        return collateralInBTC * uint256(btcPrice);
+    }
+
+    // Function to calculate total deposits in the pool in USD
+    function calculateTotalDepositsInUSD() public view returns (uint256 totalDepositsUSD) {
+        uint256 ethPool = ETHPool[address(this)];
+        uint256 btcPool = mBTCPool[address(this)];
+        
+        int256 ethPrice = assetPrices.ethPrice; // Replace with actual ETH price in USD
+        int256 btcPrice = assetPrices.btcPrice; // Replace with actual mBTC price in USD
+        
+        totalDepositsUSD = (ethPool * uint256(ethPrice)) + (btcPool * uint256(btcPrice));
+        return totalDepositsUSD;
+    }
+
+    // Function to calculate total borrowings in the pool in USD
+    function calculateTotalBorrowingsInUSD() public view returns (uint256 totalBorrowingsUSD) {
+        uint256 borrowedETHValue = borrowedETH[address(this)];
+        uint256 borrowedBTCValue = borrowedmBTC[address(this)];
+        
+        int256 ethPrice = assetPrices.ethPrice; // Replace with actual ETH price in USD
+        int256 btcPrice = assetPrices.btcPrice; // Replace with actual mBTC price in USD
+        
+        totalBorrowingsUSD = (borrowedETHValue * uint256(ethPrice)) + (borrowedBTCValue * uint256(btcPrice));
+        return totalBorrowingsUSD;
+    }
+    
     // Calculate the total collateral value in USD for all native tokens (ETH and mBTC)
     function calculateTotalCollateralInUSD(address user) internal view returns (uint256 totalCollateralInUSD) {
         uint256 collateralETHAmount = collateralETH[user];
@@ -216,8 +266,9 @@ contract LendingPool {
 
         uint256 borrowedValueInUSD = uint256(amount) * uint256(assetPrices.ethPrice);
 
-        // Ensure the collateral is sufficient to borrow the amount (e.g., 150% collateralization)
-        require(totalCollateralInUSD >= borrowedValueInUSD * 150 / 100, "Insufficient collateral");
+        // Ensure the collateral is sufficient to borrow the amount (based on Collateral Factor)
+        uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
+        require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
 
         borrowedETH[msg.sender] += amount;
 
@@ -227,6 +278,27 @@ contract LendingPool {
 
         emit Borrowed(msg.sender, amount, "ETH");
     }
+
+    // Function to borrow mBTC with collateral from both ETH and mBTC using Collateral Factor
+    function borrowBTC(uint256 amount) external {
+    require(amount > 0, "Amount must be greater than 0");
+
+    uint256 totalCollateralInUSD = calculateTotalCollateralInUSD(msg.sender);
+
+    // Calculate the borrowed value in USD (using mBTC price)
+    uint256 borrowedValueInUSD = uint256(amount) * uint256(assetPrices.btcPrice);
+
+    // Ensure the collateral is sufficient to borrow the amount (based on Collateral Factor)
+    uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
+    require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
+
+    borrowedmBTC[msg.sender] += amount;
+
+    // Transfer the borrowed mBTC to the user
+    require(mBTCContract.transfer(msg.sender, amount), "mBTC transfer failed");
+
+    emit Borrowed(msg.sender, amount, "BTC");
+}
 
     // Function to fetch BTC price
     function getBtcPrice() public view returns (int256) {

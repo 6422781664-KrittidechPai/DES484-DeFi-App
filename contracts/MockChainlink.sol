@@ -3,7 +3,6 @@ pragma solidity ^0.8.28;
 
 contract MockChainlink {
     mapping(bytes => int256) private prices; // Maps asset IDs to their prices
-    uint256 public funds;
 
     event PriceUpdated(bytes indexed assetId, int256 newPrice);
 
