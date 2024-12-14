@@ -14,13 +14,19 @@ contract LendingPool {
     // Reference to MockOracle
     MockOracle public mockOracle;
 
-    // Mapping to track user balances in  tokens
+    // Mapping to track user balances in tokens
     mapping(address => uint256) public ETHPool;
     mapping(address => uint256) public mBTCPool;
     
     // Mapping to track user balances in synthetic tokens
     mapping(address => uint256) public sETHBalance;
     mapping(address => uint256) public sBTCBalance;
+
+    // Mapping to track collateral and borrowed amounts
+    mapping(address => uint256) public collateralETH; // Collateral in ETH
+    mapping(address => uint256) public collateralmBTC; // Collateral in mBTC
+    mapping(address => uint256) public borrowedETH; // Borrowed ETH
+    mapping(address => uint256) public borrowedmBTC; // Borrowed mBTC
 
     // Constants for token type hashing
     bytes32 private constant ETH_HASH = keccak256(abi.encodePacked("ETH"));
@@ -34,6 +40,9 @@ contract LendingPool {
 
     AssetPrices public assetPrices;
 
+    // Collateralization ratio (150% in this case)
+    uint256 public constant COLLATERALIZATION_RATIO = 150;
+
     // Events for deposit actions
     event Deposited(address indexed user, uint256 amount, string tokenType);
     event DepositFailed(address indexed user, uint256 amount, string reason);
@@ -41,6 +50,14 @@ contract LendingPool {
     // Events for withdraw actions
     event Withdrawn(address indexed user, uint256 amount, string tokenType);
     event WithdrawFailed(address indexed user, uint256 amount, string reason);
+
+    // Event for borrowing
+    event Borrowed(address indexed user, uint256 amount, string tokenType);
+    event BorrowFail(address indexed user, uint256 amount, string reason);
+
+    // Event for repaying
+    event Repaid(address indexed user, uint256 amount, string tokenType);
+    event RepayFailed(address indexed user, uint256 amount, string reason);
 
     // Event to log price updates
     event PriceUpdated(string assetId, int256 newPrice);
@@ -122,10 +139,50 @@ contract LendingPool {
         }
     }
 
+    // Function to update price from MockOracle
     function updatePrices() public {
-        // Fetch prices from MockOracle
         assetPrices.btcPrice = mockOracle.fetchPrice("BTC");
         assetPrices.ethPrice = mockOracle.fetchPrice("ETH");
+    }
+
+    // Calculate the total collateral value in USD for all native tokens (ETH and mBTC)
+    function calculateTotalCollateralInUSD(address user) internal view returns (uint256 totalCollateralInUSD) {
+        uint256 collateralETHAmount = collateralETH[user];
+        uint256 collateralBTCAmount = collateralmBTC[user];
+
+        // Get the current price of ETH and mBTC in USD
+        int256 ethPrice = assetPrices.ethPrice; // ETH price in USD
+        int256 btcPrice = assetPrices.btcPrice; // BTC price in USD
+
+        uint256 collateralETHInUSD = 0;
+        uint256 collateralBTCInUSD = 0;
+        
+        collateralETHInUSD = uint256(ethPrice) * collateralETHAmount;
+        collateralBTCInUSD = uint256(btcPrice) * collateralBTCAmount;
+
+        // Calculate total collateral value in USD
+        totalCollateralInUSD = collateralETHInUSD + collateralBTCInUSD;
+        return totalCollateralInUSD;
+    }
+
+    // Function to borrow ETH with collateral from both ETH and mBTC
+    function borrowETH(uint256 amount) external {
+        require(amount > 0, "Amount must be greater than 0");
+
+        uint256 totalCollateralInUSD = calculateTotalCollateralInUSD(msg.sender);
+
+        uint256 borrowedValueInUSD = uint256(amount) * uint256(assetPrices.ethPrice);
+
+        // Ensure the collateral is sufficient to borrow the amount (e.g., 150% collateralization)
+        require(totalCollateralInUSD >= borrowedValueInUSD * 150 / 100, "Insufficient collateral");
+
+        borrowedETH[msg.sender] += amount;
+
+        // Transfer the borrowed ETH to the user
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, "ETH transfer failed");
+
+        emit Borrowed(msg.sender, amount, "ETH");
     }
 
     // Function to fetch BTC price
