@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "./sToken.sol";
 import "./MockOracle.sol";
 import "./LinearInterestRateModel.sol";
+import "./Liquidation.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "hardhat/console.sol";
 
@@ -121,6 +122,7 @@ contract LendingPool {
         bytes32 tokenTypeHash = keccak256(abi.encodePacked(tokenType));
 
         if (tokenTypeHash == ETH_HASH) {
+            
             require(sETHBalance[msg.sender] >= amount, "Insufficient sETH balance");
 
             sETHBalance[msg.sender] -= amount;
