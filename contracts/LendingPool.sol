@@ -168,11 +168,11 @@ contract LendingPool {
         interestRate = interest.calculateInterestRate(utilizationRate);
     }
 
-    // Function to calculate some amount with interest
+    // Function to calculate debt with interest
     function calculateValueWithInterest(uint256 amount) public returns (uint256){
         calculateUtilizationAndInterestRate();
-        uint256 total = amount + ((amount * interestRate) / 100);
-        return total;
+        uint256 totalDebtWithInterest = amount + ((amount * interestRate) / 1e18);
+        return totalDebtWithInterest;
     }
 
     // Function to deposit collateral (ETH or mBTC) into the lending pool
@@ -217,18 +217,11 @@ contract LendingPool {
         // Update the collateral balance
         collateralETH[msg.sender] -= amount;
 
-        int256 ETHprice = assetPrices.ethPrice;
-        uint256 amountInUSD = amount * uint256(ETHprice);
-
-        uint256 amountAfterInterestInUSD = calculateValueWithInterest(amountInUSD);
-
-        uint256 finalAmount = amountAfterInterestInUSD / uint256(ETHprice);
-
         // Transfer ETH collateral back to the user
-        (bool success, ) = msg.sender.call{value: finalAmount}("");
+        (bool success, ) = msg.sender.call{value: amount}("");
         require(success, "ETH transfer failed");
 
-        emit CollateralWithdrawn(msg.sender, finalAmount, "ETH");
+        emit CollateralWithdrawn(msg.sender, amount, "ETH");
     }
 
     // Function to withdraw mBTC collateral after loan repayment
@@ -240,17 +233,10 @@ contract LendingPool {
         // Update the collateral balance
         collateralmBTC[msg.sender] -= amount;
 
-        int256 BTCprice = assetPrices.btcPrice;
-        uint256 amountInUSD = amount * uint256(BTCprice);
-
-        uint256 amountAfterInterestInUSD = calculateValueWithInterest(amountInUSD);
-
-        uint256 finalAmount = amountAfterInterestInUSD / uint256(BTCprice);
-
         // Transfer mBTC collateral back to the user
-        require(mBTCContract.transfer(msg.sender, finalAmount), "mBTC transfer failed");
+        require(mBTCContract.transfer(msg.sender, amount), "mBTC transfer failed");
 
-        emit CollateralWithdrawn(msg.sender, finalAmount, "mBTC");
+        emit CollateralWithdrawn(msg.sender, amount, "mBTC");
     }
 
     // Function to get the current collateral balance for the user in ETH
@@ -334,10 +320,7 @@ contract LendingPool {
         uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
         require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
 
-        // Include interest in the borrowed amount
-        uint256 totalDebtWithInterest = calculateValueWithInterest(borrowedValueInUSD);
-
-        borrowedETH[msg.sender] += totalDebtWithInterest;
+        borrowedETH[msg.sender] += amount;
 
         // Transfer the borrowed ETH to the user
         (bool success, ) = msg.sender.call{value: amount}("");
@@ -361,10 +344,7 @@ contract LendingPool {
         uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
         require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
 
-        // Include interest in the borrowed amount
-        uint256 totalDebtWithInterest = calculateValueWithInterest(borrowedValueInUSD);
-
-        borrowedmBTC[msg.sender] += totalDebtWithInterest;
+        borrowedmBTC[msg.sender] += amount;
 
         // Transfer the borrowed mBTC to the user
         require(mBTCContract.transfer(msg.sender, amount), "mBTC transfer failed");
@@ -418,8 +398,8 @@ contract LendingPool {
         uint256 borrowedETHValue = borrowedETH[address(user)];
         uint256 borrowedBTCValue = borrowedmBTC[address(user)];
         
-        int256 ethPrice = assetPrices.ethPrice; // Replace with actual ETH price in USD
-        int256 btcPrice = assetPrices.btcPrice; // Replace with actual mBTC price in USD
+        int256 ethPrice = assetPrices.ethPrice;
+        int256 btcPrice = assetPrices.btcPrice;
         
         debt = (borrowedETHValue * uint256(ethPrice)) + (borrowedBTCValue * uint256(btcPrice));
         return debt;
