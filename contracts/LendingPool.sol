@@ -107,6 +107,7 @@ contract LendingPool {
         bytes32 tokenTypeHash = keccak256(abi.encodePacked(tokenType));
 
         if (tokenTypeHash == ETH_HASH) {
+            
             require(sETHBalance[msg.sender] >= amount, "Insufficient sETH balance");
 
             sETHBalance[msg.sender] -= amount;
