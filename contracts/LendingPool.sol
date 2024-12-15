@@ -433,37 +433,36 @@ contract LendingPool {
         // Apply interest to all depositors
         for (uint i = 0; i < ul; i++) {
             temp_user = users[i];
-            uint256 usersETH = sETHPool[user];
-            uint256 usersdBTC = sBTCPool[user];
+            uint256 usersETH = sETHBalance[temp_user];
+            uint256 usersBTC = sBTCBalance[temp_user];
             
             uint256 sETHinterest = (usersETH * uint256(interestRate)) / 1e18;
             uint256 sBTCinterest = (usersBTC * uint256(interestRate)) / 1e18;
 
-            sETHBalance[user] += ETHinterest;
-            sBTCBalance[user] += BTCinterest;
-        }
+            sETHBalance[temp_user] += sETHinterest;
+            sBTCBalance[temp_user] += sBTCinterest;
 
-        // Apply interest to all borrowers
+            // Apply interest to all borrowers
 
-            uint256 debtETH = borrowedETH[user];
-            uint256 debtBTC = borrowedBTC[user];
+            uint256 debtETH = borrowedETH[temp_user];
+            uint256 debtBTC = borrowedmBTC[temp_user];
 
-            uint256 ETHDebtInterest = (debtsETH * uint256(interestRate)) / 1e18;
-            uint256 sBTCDebtInterest = (debtsBTC * uint256(interestRate)) / 1e18;
+            uint256 ETHDebtInterest = (debtETH * uint256(interestRate)) / 1e18;
+            uint256 sBTCDebtInterest = (debtBTC * uint256(interestRate)) / 1e18;
             
             // Update the user's borrowed amount
-            borrowedETH[user] += ETHDebtInterest;
-            borrowedmBTC[user] += sBTCDebtInterest;
+            borrowedETH[temp_user] += ETHDebtInterest;
+            borrowedmBTC[temp_user] += sBTCDebtInterest;
         }
     }
-
+        
     // Function to fetch BTC price
     function getBtcPrice() public view returns (int256) {
         return assetPrices.btcPrice;
-    }
+        }
 
     // Function to fetch ETH price
     function getEthPrice() public view returns (int256) {
         return assetPrices.ethPrice;
-    }
+        } 
 }
