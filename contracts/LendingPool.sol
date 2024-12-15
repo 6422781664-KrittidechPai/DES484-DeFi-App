@@ -51,6 +51,10 @@ contract LendingPool {
     // Collateral Factor (e.g., 0.75 means users can borrow up to 75% of the value of their collateral)
     uint256 public collateralFactor = 75; // 75% collateral factor
 
+    // util and interest rate
+    uint256 public utilizationRate = 0;
+    uint256 public interestRate = 1; // Base interest = 1%
+
     // Events for deposit actions
     event Deposited(address indexed user, uint256 amount, string tokenType);
     event DepositFailed(address indexed user, uint256 amount, string reason);
@@ -63,9 +67,6 @@ contract LendingPool {
     // Event for borrowing
     event Borrowed(address indexed user, uint256 amount, string tokenType);
     event BorrowFail(address indexed user, uint256 amount, string reason);
-
-    // Mapping to store the loan start time for each user
-    mapping(address => uint256) public loanStartTime;
 
     // Event for repaying
     event Repaid(address indexed user, uint256 amount, string tokenType);
@@ -158,6 +159,22 @@ contract LendingPool {
         assetPrices.ethPrice = mockOracle.fetchPrice("ETH");
     }
 
+    // Function to calculate utilization and interest rate using the LinearInterestRateModel
+    function calculateUtilizationAndInterestRate() public {
+        uint256 totalDeposits = calculateTotalDepositsInUSD();
+        uint256 totalBorrowings = calculateTotalBorrowingsInUSD();
+        
+        utilizationRate = interest.calculateUtilizationRate(totalDeposits, totalBorrowings);
+        interestRate = interest.calculateInterestRate(utilizationRate);
+    }
+
+    // Function to calculate some amount with interest
+    function calculateValueWithInterest(uint256 amount) public returns (uint256){
+        calculateUtilizationAndInterestRate();
+        uint256 total = amount + ((amount * interestRate) / 100);
+        return total;
+    }
+
     // Function to deposit collateral (ETH or mBTC) into the lending pool
     function depositCollateral(uint256 amount, string memory tokenType) external payable {
         require(amount > 0, "Amount must be greater than 0");
@@ -200,15 +217,22 @@ contract LendingPool {
         // Update the collateral balance
         collateralETH[msg.sender] -= amount;
 
+        int256 ETHprice = assetPrices.ethPrice;
+        uint256 amountInUSD = amount * uint256(ETHprice);
+
+        uint256 amountAfterInterestInUSD = calculateValueWithInterest(amountInUSD);
+
+        uint256 finalAmount = amountAfterInterestInUSD / uint256(ETHprice);
+
         // Transfer ETH collateral back to the user
-        (bool success, ) = msg.sender.call{value: amount}("");
+        (bool success, ) = msg.sender.call{value: finalAmount}("");
         require(success, "ETH transfer failed");
 
-        emit CollateralWithdrawn(msg.sender, amount, "ETH");
+        emit CollateralWithdrawn(msg.sender, finalAmount, "ETH");
     }
 
     // Function to withdraw mBTC collateral after loan repayment
-    function withdrawBTC(uint256 amount) external {
+    function withdrawBTCCollateral(uint256 amount) external {
         require(amount > 0, "Amount must be greater than 0");
         require(collateralmBTC[msg.sender] >= amount, "Not enough collateral");
         require(borrowedmBTC[msg.sender] == 0, "Loan not fully repaid");
@@ -216,10 +240,17 @@ contract LendingPool {
         // Update the collateral balance
         collateralmBTC[msg.sender] -= amount;
 
-        // Transfer mBTC collateral back to the user
-        require(mBTCContract.transfer(msg.sender, amount), "mBTC transfer failed");
+        int256 BTCprice = assetPrices.btcPrice;
+        uint256 amountInUSD = amount * uint256(BTCprice);
 
-        emit CollateralWithdrawn(msg.sender, amount, "mBTC");
+        uint256 amountAfterInterestInUSD = calculateValueWithInterest(amountInUSD);
+
+        uint256 finalAmount = amountAfterInterestInUSD / uint256(BTCprice);
+
+        // Transfer mBTC collateral back to the user
+        require(mBTCContract.transfer(msg.sender, finalAmount), "mBTC transfer failed");
+
+        emit CollateralWithdrawn(msg.sender, finalAmount, "mBTC");
     }
 
     // Function to get the current collateral balance for the user in ETH
@@ -303,7 +334,10 @@ contract LendingPool {
         uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
         require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
 
-        borrowedETH[msg.sender] += amount;
+        // Include interest in the borrowed amount
+        uint256 totalDebtWithInterest = calculateValueWithInterest(borrowedValueInUSD);
+
+        borrowedETH[msg.sender] += totalDebtWithInterest;
 
         // Transfer the borrowed ETH to the user
         (bool success, ) = msg.sender.call{value: amount}("");
@@ -327,7 +361,10 @@ contract LendingPool {
         uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
         require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
 
-        borrowedmBTC[msg.sender] += amount;
+        // Include interest in the borrowed amount
+        uint256 totalDebtWithInterest = calculateValueWithInterest(borrowedValueInUSD);
+
+        borrowedmBTC[msg.sender] += totalDebtWithInterest;
 
         // Transfer the borrowed mBTC to the user
         require(mBTCContract.transfer(msg.sender, amount), "mBTC transfer failed");
