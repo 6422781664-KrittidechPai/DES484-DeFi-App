@@ -1,6 +1,15 @@
 {
+  "scripts": {
+    "start": "nodemon app.js"
+  },
+  
+  
   "dependencies": {
-    "hardhat": "^2.22.17"
+    "hardhat": "^2.22.17",
+    "nodemon": "^2.00.22",
+    "web3": "^1.9.0",
+    "express": "4.21.2"
+
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
