@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import "./sToken.sol";
 import "./MockOracle.sol";
+import "./LinearInterestRateModel.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "hardhat/console.sol";
 
@@ -14,6 +15,9 @@ contract LendingPool {
 
     // Reference to MockOracle
     MockOracle public mockOracle;
+
+    // Reference to interest contract
+    LinearInterestRateModel public interest;
 
     // Mapping to track user balances in tokens
     mapping(address => uint256) public ETHPool;
@@ -70,11 +74,12 @@ contract LendingPool {
     // Event to log price updates
     event PriceUpdated(string assetId, int256 newPrice);
 
-    constructor(address _sETHAddress, address _sBTCAddress, address _mBTCAddress, address _MockOracleAddress) {
+    constructor(address _sETHAddress, address _sBTCAddress, address _mBTCAddress, address _MockOracleAddress, address _interestRateModelAddress) {
         sETHContract = sToken(_sETHAddress);
         sBTCContract = sToken(_sBTCAddress);
         mBTCContract = sToken(_mBTCAddress);
         mockOracle = MockOracle(_MockOracleAddress);
+        interest = LinearInterestRateModel(_interestRateModelAddress);
     }
 
     // Deposit function to deposit ETH or BTC into the LendingPool and mint corresponding sTokens
