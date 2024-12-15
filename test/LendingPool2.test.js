@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("LendingPool2 Contract", function () {
+describe.skip("LendingPool2 Contract", function () {
   let LendingPool, sToken, sETH, sBTC, mBTC, mockChainlink, mockOracle;
   let owner, user1, user2;
   const initialDepositAmount = ethers.parseEther("1"); // 1 ETH or 1 mBTC

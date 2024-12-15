@@ -60,6 +60,9 @@ contract LendingPool {
     event Borrowed(address indexed user, uint256 amount, string tokenType);
     event BorrowFail(address indexed user, uint256 amount, string reason);
 
+    // Mapping to store the loan start time for each user
+    mapping(address => uint256) public loanStartTime;
+
     // Event for repaying
     event Repaid(address indexed user, uint256 amount, string tokenType);
     event RepayFailed(address indexed user, uint256 amount, string reason);
@@ -290,7 +293,7 @@ contract LendingPool {
         uint256 totalCollateralInUSD = calculateTotalCollateralInUSD(msg.sender);
 
         uint256 borrowedValueInUSD = uint256(amount) * uint256(assetPrices.ethPrice);
-        
+
         // Ensure the collateral is sufficient to borrow the amount (based on Collateral Factor)
         uint256 maxBorrowable = (totalCollateralInUSD * collateralFactor) / 100;
         require(borrowedValueInUSD <= maxBorrowable, "Insufficient collateral for the requested loan");
