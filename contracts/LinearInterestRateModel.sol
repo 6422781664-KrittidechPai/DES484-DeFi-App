@@ -26,18 +26,7 @@ contract LinearInterestRateModel {
     }
 
     // Function to calculate the interest rate based on utilization
-    function calculateInterestRate(uint256 totalDeposits, uint256 totalBorrowed) external pure returns (uint256) {
-        if (totalDeposits == 0) {
-            return BASE_INTEREST_RATE; // If no deposits, return base interest rate
-        }
-
-        uint256 utilizationRate = (totalBorrowed * 1e18) / totalDeposits; // Utilization rate in percentage (1e18 is 100%)
-
-        // Ensure the utilization rate doesn't exceed the maximum (100%)
-        if (utilizationRate > MAX_UTILIZATION_RATE) {
-            utilizationRate = MAX_UTILIZATION_RATE;
-        }
-
+    function calculateInterestRate(uint256 utilizationRate) external pure returns (uint256) {
         // Linear interpolation to calculate interest rate based on utilization rate
         uint256 interestRate = BASE_INTEREST_RATE + (utilizationRate * (MAX_INTEREST_RATE - BASE_INTEREST_RATE)) / MAX_UTILIZATION_RATE;
 

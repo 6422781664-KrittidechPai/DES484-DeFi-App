@@ -45,27 +45,26 @@ describe("LinearInterestRateModel Contract", function () {
     it("should calculate interest rate based on utilization rate", async function () {
       const totalDeposits = 1000n; // 1000 units
       const totalBorrowed = 500n;  // 500 units
-
-      const interestRate = await interestRateModel.calculateInterestRate(totalDeposits, totalBorrowed);
-
-      const utilizationRate = (500n * 1000000000000000000n) / 1000n;
+      const utilizationRate = await interestRateModel.calculateUtilizationRate(totalDeposits, totalBorrowed)
+      const interestRate = await interestRateModel.calculateInterestRate(utilizationRate);
       const expectedInterestRate = BASE_INTEREST_RATE + (utilizationRate * (MAX_INTEREST_RATE - BASE_INTEREST_RATE)) / MAX_UTILIZATION_RATE;
       expect(interestRate).to.equal(expectedInterestRate);
     });
 
     it("should return the base interest rate if no deposits are made", async function () {
-      const totalDeposits = 0n;
-      const totalBorrowed = 500n;
-
-      const interestRate = await interestRateModel.calculateInterestRate(totalDeposits, totalBorrowed);
+      const totalDeposits = 0n; // 1000 units
+      const totalBorrowed = 500n;  // 500 units
+      const utilizationRate = await interestRateModel.calculateUtilizationRate(totalDeposits, totalBorrowed)
+      const interestRate = await interestRateModel.calculateInterestRate(utilizationRate);
       expect(interestRate).to.equal(BASE_INTEREST_RATE);
     });
 
     it("should return max interest rate if utilization exceeds 100%", async function () {
       const totalDeposits = 1000n;
       const totalBorrowed = 1500n; // Borrowing more than available deposits (150%)
+      const utilizationRate = await interestRateModel.calculateUtilizationRate(totalDeposits, totalBorrowed)
 
-      const interestRate = await interestRateModel.calculateInterestRate(totalDeposits, totalBorrowed);
+      const interestRate = await interestRateModel.calculateInterestRate(utilizationRate);
 
       // Interest rate should not exceed max interest rate
       expect(interestRate).to.equal(MAX_INTEREST_RATE);
