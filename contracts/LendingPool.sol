@@ -37,6 +37,9 @@ contract LendingPool {
     // Mapping to track borrow logic
     mapping(address => bool) public isBorrowing;
 
+    // Array for users
+    address[] public users; // for user with deposits
+
     // Constants for token type hashing
     bytes32 private constant ETH_HASH = keccak256(abi.encodePacked("ETH"));
     bytes32 private constant BTC_HASH = keccak256(abi.encodePacked("BTC"));
@@ -58,6 +61,7 @@ contract LendingPool {
 
     // Events for deposit actions
     event Deposited(address indexed user, uint256 amount, string tokenType);
+    event CollateralDeposited(address indexed user, uint256 amount, string collateralType);
     event DepositFailed(address indexed user, uint256 amount, string reason);
 
     // Events for withdraw actions
@@ -155,6 +159,11 @@ contract LendingPool {
         }
     }
 
+    // Function to get all users who have deposited
+    function getAllUsers() public view returns (address[] memory) {
+        return users;
+    }
+
     // Function to update price from MockOracle
     function updatePrices() public {
         assetPrices.btcPrice = mockOracle.fetchPrice("BTC");
@@ -180,18 +189,17 @@ contract LendingPool {
     // Function to deposit collateral (ETH or mBTC) into the lending pool
     function depositCollateral(uint256 amount, string memory tokenType) external payable {
         require(amount > 0, "Amount must be greater than 0");
-
         bytes32 tokenTypeHash = keccak256(abi.encodePacked(tokenType));
 
         if (tokenTypeHash == ETH_HASH) {
             // ETH deposit logic
             require(msg.value == amount, "ETH amount mismatch");
 
-            // Mint sETH to the user
+            // Add the ETH amount to the user's collateral balance
             collateralETH[msg.sender] += amount;
-            ETHPool[msg.sender] += amount;
 
-            emit Deposited(msg.sender, amount, "ETH");
+            emit CollateralWithdrawn(msg.sender, amount, "ETH");
+
         } else if (tokenTypeHash == BTC_HASH) {
             // mBTC deposit logic
             require(msg.value == amount, "mBTC amount mismatch");
@@ -199,11 +207,10 @@ contract LendingPool {
             // Transfer mBTC from the user to the LendingPool
             require(mBTCContract.transferFrom(msg.sender, address(this), amount), "Transfer of mBTC failed");
 
-            // Mint sBTC to the user
+            // Add the mBTC amount to the user's collateral balance
             collateralmBTC[msg.sender] += amount;
-            mBTCPool[msg.sender] += amount;
 
-            emit Deposited(msg.sender, amount, "BTC");
+            emit CollateralWithdrawn(msg.sender, amount, "BTC");
         } else {
             emit DepositFailed(msg.sender, amount, "Invalid token type: Deposit Collateral");
             revert("Invalid token type: Deposit Collateral");
@@ -419,13 +426,43 @@ contract LendingPool {
         return deposits;
     }
 
+    // Function to calculate interest and apply it to depositors and borrowers
+    function applyInterest() public {
+        address temp_user;
+        uint ul = users.length;
+        // Apply interest to all depositors
+        for (uint i = 0; i < ul; i++) {
+            temp_user = users[i];
+            uint256 usersETH = sETHBalance[temp_user];
+            uint256 usersBTC = sBTCBalance[temp_user];
+            
+            uint256 sETHinterest = (usersETH * uint256(interestRate)) / 1e18;
+            uint256 sBTCinterest = (usersBTC * uint256(interestRate)) / 1e18;
+
+            sETHBalance[temp_user] += sETHinterest;
+            sBTCBalance[temp_user] += sBTCinterest;
+
+            // Apply interest to all borrowers
+
+            uint256 debtETH = borrowedETH[temp_user];
+            uint256 debtBTC = borrowedmBTC[temp_user];
+
+            uint256 ETHDebtInterest = (debtETH * uint256(interestRate)) / 1e18;
+            uint256 sBTCDebtInterest = (debtBTC * uint256(interestRate)) / 1e18;
+            
+            // Update the user's borrowed amount
+            borrowedETH[temp_user] += ETHDebtInterest;
+            borrowedmBTC[temp_user] += sBTCDebtInterest;
+        }
+    }
+        
     // Function to fetch BTC price
     function getBtcPrice() public view returns (int256) {
         return assetPrices.btcPrice;
-    }
+        }
 
     // Function to fetch ETH price
     function getEthPrice() public view returns (int256) {
         return assetPrices.ethPrice;
-    }
+        } 
 }
