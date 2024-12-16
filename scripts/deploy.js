@@ -18,7 +18,7 @@ async function main() {
   const mbtcPrice = hre.ethers.parseUnits("5000", 18);
 
   const ethAssetId = ethers.encodeBytes32String("ETH");
-  const mbtcAssetId = ethers.encodeBytes32String("mBTC");
+  const mbtcAssetId = ethers.encodeBytes32String("BTC");
 
   const setETHPrice = await mockChainlink.setPrice(ethAssetId, ethPrice);
   await setETHPrice.wait();
@@ -36,6 +36,10 @@ async function main() {
   const mockOracle = await MockOracle.deploy(await mockChainlink.getAddress());
   await mockOracle.waitForDeployment();
   console.log("MockOracle contract deployed to:", await mockOracle.getAddress());
+
+  await mockOracle.fetchPrice(ethers.toUtf8Bytes("ETH"));
+  await mockOracle.fetchPrice(ethers.toUtf8Bytes("BTC"));
+
 
   // ===============================
   // Deploy sToken Contracts (sETH, sBTC, mBTC)
@@ -93,6 +97,8 @@ async function main() {
 
   await lendingPoolContract.waitForDeployment();
   console.log("LendingPool Contract deployed to:", lendingPoolContract.address);
+
+  await lendingPoolContract.updatePrices();
 
 /// for test ///
   const test = await hre.ethers.getContractFactory("test");
