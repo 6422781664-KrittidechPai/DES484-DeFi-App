@@ -12,7 +12,7 @@ describe.skip("Deployment Test", function () {
       const sTokenFactory = await ethers.getContractFactory("sToken");
       sETH = await sTokenFactory.deploy("Synthetic ETH", "sETH");
       sBTC = await sTokenFactory.deploy("Synthetic BTC", "sBTC");
-      mBTC = await sTokenFactory.deploy("mBTC", "mBTC");
+      mBTC = await sTokenFactory.deploy("Mock BTC", "mBTC");
   
       // Deploy LendingPool contract with addresses of sETH, sBTC, and mBTC contracts
       const LendingPoolFactory = await ethers.getContractFactory("LendingPool");
