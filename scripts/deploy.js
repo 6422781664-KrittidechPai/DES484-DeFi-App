@@ -13,6 +13,21 @@ async function main() {
   await mockChainlink.waitForDeployment();
   console.log("MockChainlink contract deployed to:", await mockChainlink.getAddress());
 
+  // Initialize the prices
+  const ethPrice = hre.ethers.parseUnits("20000", 18);
+  const mbtcPrice = hre.ethers.parseUnits("5000", 18);
+
+  const ethAssetId = ethers.encodeBytes32String("ETH");
+  const mbtcAssetId = ethers.encodeBytes32String("mBTC");
+
+  const setETHPrice = await mockChainlink.setPrice(ethAssetId, ethPrice);
+  await setETHPrice.wait();
+  console.log("ETH price set to: ", ethPrice.toString());
+
+  const setmBTCPrice = await mockChainlink.setPrice(mbtcAssetId, mbtcPrice);
+  await setmBTCPrice.wait();
+  console.log("mBTC price set to: ", mbtcPrice.toString());
+
   // ===============================
   // Deploy MockOracle Contract
   // ===============================
