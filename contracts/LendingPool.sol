@@ -20,6 +20,9 @@ contract LendingPool {
     // Reference to interest contract
     LinearInterestRateModel public interest;
 
+    // Reference to liquidation contract
+    Liquidation public liquidation;
+
     // Mapping to track user balances in tokens
     mapping(address => uint256) public ETHPool;
     mapping(address => uint256) public mBTCPool;
@@ -80,12 +83,13 @@ contract LendingPool {
     // Event to log price updates
     event PriceUpdated(string assetId, int256 newPrice);
 
-    constructor(address _sETHAddress, address _sBTCAddress, address _mBTCAddress, address _MockOracleAddress, address _interestRateModelAddress) {
+    constructor(address _sETHAddress, address _sBTCAddress, address _mBTCAddress, address _MockOracleAddress, address _interestRateModelAddress, address _liquidationAddress) {
         sETHContract = sToken(_sETHAddress);
         sBTCContract = sToken(_sBTCAddress);
         mBTCContract = sToken(_mBTCAddress);
         mockOracle = MockOracle(_MockOracleAddress);
         interest = LinearInterestRateModel(_interestRateModelAddress);
+        liquidation = Liquidation(_liquidationAddress);
     }
 
     // Deposit function to deposit ETH or BTC into the LendingPool and mint corresponding sTokens
