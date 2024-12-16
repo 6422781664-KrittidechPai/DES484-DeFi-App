@@ -88,6 +88,8 @@ async function main() {
   console.log("sETH deployed to:", await sETH.getAddress());
   console.log("sBTC deployed to:", await sBTC.getAddress());
   console.log("mBTC deployed to:", await mBTC.getAddress());
+  console.log("interestRateModel deployed to:", await interestRateModel.getAddress());
+  console.log("Liquidation deployed to:", await liquidation.getAddress());
   console.log("LendingPool deployed to:", await lendingPoolContract.getAddress());
 }
 
