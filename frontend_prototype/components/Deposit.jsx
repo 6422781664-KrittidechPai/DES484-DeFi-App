@@ -13,22 +13,20 @@ const Deposit = () => {
   const [selectedCrypto, setSelectedCrypto] = useState(null);
   const [estimatedValue, setEstimatedValue] = useState(0);
   const [exchangeRate, setExchangeRate] = useState(0);
-  const [collateralFactor, setCollateralFactor] = useState(50); // Example collateral factor
+  const [collateralFactor, setCollateralFactor] = useState(50);
 
   const cryptos = [
     { value: 'BTC', label: 'Bitcoin (BTC)' },
     { value: 'ETH', label: 'Ethereum (ETH)' },
-    { value: 'USDT', label: 'Tether (USDT)' },
   ];
 
   // Fetch exchange rate when crypto is selected
   useEffect(() => {
     if (selectedCrypto) {
-      // Here we simulate fetching the exchange rate from an API (You can replace with actual API)
+      // fetching the exchange rate from an API (replace with actual API)
       const mockRates = {
-        BTC: 45000,  // Example exchange rate for Bitcoin
-        ETH: 3000,   // Example exchange rate for Ethereum
-        USDT: 1,     // Example exchange rate for USDT (Stablecoin)
+        BTC: 106894.30,  // Example exchange rate for Bitcoin
+        ETH: 3987.32,   // Example exchange rate for Ethereum
       };
       setExchangeRate(mockRates[selectedCrypto.value]);
 
@@ -99,6 +97,7 @@ const Deposit = () => {
             <Card.Body>
               <Card.Title>Deposit rate</Card.Title>
               <Card.Text>
+                <strong>Interest Rate:</strong> 3% <br />
                 <strong>Collateral Factor:</strong> {collateralFactor}% <br />
               </Card.Text>
             </Card.Body>

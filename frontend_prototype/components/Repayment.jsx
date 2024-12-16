@@ -16,8 +16,8 @@ const Repayment = () => {
   };
   
   const exchangeRates = {
-    BTC: 30000,  // Example exchange rate in USD
-    ETH: 1800,   // Example exchange rate in USD
+    BTC: 106894.30,  // Example exchange rate in USD
+    ETH: 3987.32,   // Example exchange rate in USD
   };
 
   const [amountToRepay, setAmountToRepay] = useState(0);

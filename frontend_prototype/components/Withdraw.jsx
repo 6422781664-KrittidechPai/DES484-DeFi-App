@@ -13,11 +13,11 @@ const Withdraw = () => {
   // Update balance and exchange rate when cryptocurrency is selected
   useEffect(() => {
     if (selectedCrypto === 'sETH') {
-      setBalance(10); // Example balance for sETH
-      setExchangeRate(2000); // Example exchange rate for sETH
+      setBalance(0.00025); // Example balance for sETH
+      setExchangeRate(3987.32); // Example exchange rate for sETH
     } else if (selectedCrypto === 'mBTC') {
-      setBalance(5); // Example balance for mBTC
-      setExchangeRate(30000); // Example exchange rate for mBTC
+      setBalance(0); // Example balance for mBTC
+      setExchangeRate(106894.30); // Example exchange rate for mBTC
     }
   }, [selectedCrypto]);
 

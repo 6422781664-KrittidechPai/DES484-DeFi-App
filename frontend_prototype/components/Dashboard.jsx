@@ -1,30 +1,61 @@
 // src/components/Dashboard.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Table, Container, Row, Col, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
 import NavBar from './NavBar';
+import { ethers } from 'ethers';
+import { lendingPoolABI } from './ABI';
+// import { lendingPoolAddress } from './addresses';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Dashboard = () => {
   const navigate = useNavigate(); // Initialize useNavigate
-  const [username, setUsername] = useState('username');
-  const [balance, setBalance] = useState(1);
-  const [totalLoan, setLoanAmount] = useState(1);
-  const [collateral, setBorrowLimit] = useState(1);
-  const [collateralFactor, setCollateralFactor] = useState(1);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [balance, setBalance] = useState(0);
+  const [collateral, setCollateral] = useState(0);
+  const [debt, setDebt] = useState(0);
   const [loanRecords, setLoanRecords] = useState([
-    { asset: 'BTC', borrowValue: '0.0000099 BTC', borrowValueUSD: 1000 },
-    { asset: 'ETH', borrowValue: '0.00026 ETH', borrowValueUSD: 1500 },
+    { asset: 'BTC', debt: 0, debtUSD: 0 },
+    { asset: 'ETH', debt: 0.00025, debtUSD: 25 },
   ]);
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleString());
 
-  // Calculate remaining borrowable value
-  const remainingBorrowableValue = balance * collateralFactor - totalLoan;
-
   // Calculate health status
-  const healthStatus = collateral < 50 ? 'Healthy' : collateral < 75 ? 'Risky' : 'Critical';
-  const healthStatusColor = collateral < 50 ? 'success' : collateral < 75 ? 'warning' : 'danger';
+  const healthStatus = 'Healthy';
+  const healthStatusColor = 'success';
+
+  // Initialize Ethereum provider and set wallet address and balance
+  useEffect(() => {
+    const connectMetaMask = async () => {
+      if (window.ethereum) {
+        try {
+          // Request accounts
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = provider.getSigner();
+          // const contract = new ethers.Contract(lendingPoolAddress, lendingPoolABI, signer);
+          const accounts = await provider.send('eth_requestAccounts', []);
+          const userAddress = accounts[0];
+          setWalletAddress(userAddress);
+
+          // Get balance in Ether
+          const balanceInWei = await provider.getBalance(userAddress);
+          const balanceInEther = ethers.formatEther(balanceInWei);
+          // setBalance(parseFloat(balanceInEther).toFixed(4)); // Set the balance to 4 decimal places
+          setBalance(700);
+          setCollateral(200);
+          setDebt(25);
+        } catch (error) {
+          console.error('Error connecting to MetaMask', error);
+          alert('Please connect your MetaMask wallet');
+        }
+      } else {
+        alert('MetaMask is not installed');
+      }
+    };
+
+    connectMetaMask();
+  }, []);
 
   // Redirect to Repayment page
   const handleRepayment = (asset) => {
@@ -39,7 +70,7 @@ const Dashboard = () => {
       {/* Top Banner */}
       <Row className="my-3">
         <Col>
-          <h2 className="h2-dashboard">User: {username}</h2>
+          <h2 className="h2-dashboard">Wallet address: {walletAddress}</h2>
         </Col>
       </Row>
 
@@ -52,20 +83,23 @@ const Dashboard = () => {
               <Card.Text>${balance}</Card.Text>
             </Card.Body>
           </Card>
-        </Col>
-        <Col md={4}>
-          <text>Total</text>
-          <Card>
-            <Card.Body>
-              <Card.Text>${totalLoan}</Card.Text>
-            </Card.Body>
-          </Card>
+          <span className="ms-3">
+            Interest rate: 3%
+          </span>
         </Col>
         <Col md={4}>
           <text>Collateral</text>
           <Card>
             <Card.Body>
               <Card.Text>${collateral}</Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <text>Debt</text>
+          <Card>
+            <Card.Body>
+              <Card.Text>${debt}</Card.Text>
             </Card.Body>
           </Card>
           <text>
@@ -75,9 +109,6 @@ const Dashboard = () => {
               style={{ width: '12px', height: '12px', display: 'inline-block' }}
             />
             {healthStatus}
-            <span className="ms-3">
-              Remaining: {remainingBorrowableValue < 0 ? `-$${Math.abs(remainingBorrowableValue).toFixed(2)}` : `$${remainingBorrowableValue.toFixed(2)}`}
-            </span>
           </text>
         </Col>
       </Row>
@@ -90,6 +121,7 @@ const Dashboard = () => {
               <tr>
                 <th>Asset</th>
                 <th>Borrow Value</th>
+                <th>Interest Rate</th>
                 <th></th>
               </tr>
             </thead>
@@ -98,9 +130,12 @@ const Dashboard = () => {
                 <tr key={index}>
                   <td>{record.asset}</td>
                   <td>
-                    {record.borrowValue}
+                    {record.debt} {record.asset}
                     <br />
-                    <small>~${record.borrowValueUSD}</small>
+                    <small>~${record.debtUSD}</small>
+                  </td>
+                  <td>
+                    3%
                   </td>
                   <td>
                     <Button variant="primary" onClick={() => handleRepayment(record.asset)}>
