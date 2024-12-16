@@ -6,7 +6,6 @@ import "./MockOracle.sol";
 import "./LinearInterestRateModel.sol";
 import "./Liquidation.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "hardhat/console.sol";
 
 contract LendingPool {
     // References to the sToken contracts for ETH and BTC
