@@ -79,6 +79,12 @@ async function main() {
   await lendingPoolContract.waitForDeployment();
   console.log("LendingPool Contract deployed to:", lendingPoolContract.address);
 
+/// for test ///
+  const test = await hre.ethers.getContractFactory("test");
+  const Test = await test.deploy();
+  await Test.waitForDeployment();
+  console.log("test deployed to",Test.address);
+
   // ===============================
   // Deployment Summary
   // ===============================
@@ -91,6 +97,7 @@ async function main() {
   console.log("interestRateModel deployed to:", await interestRateModel.getAddress());
   console.log("Liquidation deployed to:", await liquidation.getAddress());
   console.log("LendingPool deployed to:", await lendingPoolContract.getAddress());
+  console.log("test deployed to:", await Test.getAddress());
 }
 
 // Handle errors and invoke the main function
