@@ -17,3 +17,5 @@ This project is part of assignment in DES484 Class. The DeFi Lending and Borrowi
 - Run script
   - For Ganache GUI: npx hardhat run scripts/deploy.js --network ganache_gui
   - For Ganache CLI: npx hardhat run scripts/deploy.js --network ganache_cli
+
+# The main branch used in development is HardHatNew
