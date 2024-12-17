@@ -1,4 +1,6 @@
 const hre = require("hardhat");
+const fs = require('fs');
+const path = require('path');
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
@@ -96,6 +98,12 @@ async function main() {
 
   await lendingPoolContract.updatePrices();
 
+/// for test ///
+  const test = await hre.ethers.getContractFactory("test");
+  const Test = await test.deploy();
+  await Test.waitForDeployment();
+  console.log("test deployed to",Test.address);
+
   // ===============================
   // Deployment Summary
   // ===============================
@@ -108,6 +116,39 @@ async function main() {
   console.log("interestRateModel deployed to:", await interestRateModel.getAddress());
   console.log("Liquidation deployed to:", await liquidation.getAddress());
   console.log("LendingPool deployed to:", await lendingPoolContract.getAddress());
+  console.log("test deployed to:", await Test.getAddress());
+
+  const mockChainlinkAddress = await mockChainlink.getAddress();
+  const mockOracleAddress = await mockOracle.getAddress(); 
+  const sETHAddress = await sETH.getAddress();
+  const sBTCAddress = await sBTC.getAddress();
+  const mBTCAddress = await mBTC.getAddress();
+  const interestRateModelAddress = await interestRateModel.getAddress();
+  const liquidationAddress = await liquidation.getAddress();
+  const lendingPoolAddress = await lendingPoolContract.getAddress();
+  const testAddress = await Test.getAddress();
+  const addresses = [
+    { name: 'mockChainlinkAddress', address: mockChainlinkAddress },
+    { name: 'mockOracleAddress', address: mockOracleAddress },
+    { name: 'sETHAddress', address: sETHAddress },
+    { name: 'sBTCAddress', address: sBTCAddress },
+    { name: 'mBTCAddress', address: mBTCAddress },
+    { name: 'interestRateModelAddress', address: interestRateModelAddress },
+    { name: 'liquidationAddress', address: liquidationAddress },
+    { name: 'lendingPoolAddress', address: lendingPoolAddress },
+    { name: 'testAddress', address: testAddress }
+  ];
+  
+  const destinationDirectory = path.join(__dirname, '../../prototype/src/components');
+  if (!fs.existsSync(destinationDirectory)) {
+    fs.mkdirSync(destinationDirectory, { recursive: true });
+  }
+  
+  const filePath = path.join(destinationDirectory, 'addresses.jsx');
+  const fileContent = addresses.map(({ name, address }) => `export const ${name} = '${address}';`).join('\n');
+  fs.writeFileSync(filePath, fileContent, 'utf8');
+  
+  console.log(`Saved addresses to ${filePath}`);
 }
 
 // Handle errors and invoke the main function
