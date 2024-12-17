@@ -19,11 +19,10 @@ This project is part of assignment in DES484 Class. The DeFi Lending and Borrowi
   - For Ganache CLI: npx hardhat run scripts/deploy.js --network ganache_cli
  
 # How to run front-end app
-- 
-
-# The main branch used in development is HardHatNew
 1. npm create vite@latest prototype
 2. cd prototype
 3. npm install
 4. Copy files from source code into directory (prototype)
 5. npm run dev
+
+# The main branch used in development is HardHatNew
