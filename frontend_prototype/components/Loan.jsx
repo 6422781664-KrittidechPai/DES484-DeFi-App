@@ -23,11 +23,10 @@ const Loan = () => {
   // Fetch exchange rate when crypto is selected
   useEffect(() => {
     if (selectedCrypto) {
-      // Here we simulate fetching the exchange rate from an API (You can replace with actual API)
+      // fetching the exchange rate from an API (replace with actual API)
       const mockRates = {
-        BTC: 45000,  // Example exchange rate for Bitcoin
-        ETH: 3000,   // Example exchange rate for Ethereum
-        USDT: 1,     // Example exchange rate for USDT (Stablecoin)
+        BTC: 106894.30,  // Example exchange rate for Bitcoin
+        ETH: 3987.32,   // Example exchange rate for Ethereum
       };
       setExchangeRate(mockRates[selectedCrypto.value]);
 
@@ -59,7 +58,7 @@ const Loan = () => {
       <Row className="mb-4">
         <Col md={6}>
           <Form.Group>
-            <Form.Label>Amount to Loan</Form.Label>
+            <Form.Label>Amount to Loan ($)</Form.Label>
             <Form.Control
               type="number"
               placeholder="Enter amount"
@@ -98,6 +97,7 @@ const Loan = () => {
             <Card.Body>
               <Card.Title>Loan rate</Card.Title>
               <Card.Text>
+                <strong>Interest Rate:</strong> 3% <br />
                 <strong>Pool Liquidity:</strong> {poolLiquidity}% <br />
                 <strong>Borrow Cap:</strong> {borrowCap}% <br />
               </Card.Text>

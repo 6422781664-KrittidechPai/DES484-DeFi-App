@@ -1,7 +1,7 @@
 // src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-// import LoginPage from './components/LoginPage';
+import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import Loan from './components/Loan';
 import Deposit from './components/Deposit';
@@ -12,8 +12,8 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        {/* <Route path="/" element={<LoginPage />} /> */}
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/loan" element={<Loan />} />
         <Route path="/deposit" element={<Deposit />} />
         <Route path="/repayment" element={<Repayment />} />
