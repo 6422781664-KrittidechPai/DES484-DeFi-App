@@ -1,0 +1,104 @@
+/* LoginPage */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  width: 300px;
+  margin: 100px auto;
+  padding: 20px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.h2-login {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: x-large;
+}
+
+.input-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+button.connect-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button.connect-btn:hover {
+  background-color: #45a049;
+}
+
+.dashboard-container {
+  text-align: center;
+  margin-top: 50px;
+}
+
+/* Dashboard */
+.h2-dashboard {
+  color: #333;
+  text-align: left;
+  font-size: medium;
+}
+
+.card {
+  margin-bottom: 15px;
+}
+
+.card-title {
+  font-size: 1.1rem;
+}
+
+.card-text {
+  font-size: x-large;
+}
+
+table {
+  margin-top: 20px;
+}
+
+table th, table td {
+  text-align: center;
+}
+
+button {
+  width: 30%;
+}
+
+.dashboard-label {
+  font-size: large;
+}
+
+/* NavBar */
+
+.navbar {
+  margin-bottom: 20px;
+}
